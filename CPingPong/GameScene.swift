@@ -23,9 +23,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     // elements
     var table : SKSpriteNode?
-    var net : SKSpriteNode?
-    var line : SKSpriteNode? // the white line that splits left & right table
-    var border : SKSpriteNode? // white line around the table
     var ball : SKSpriteNode?
     var shadow : SKSpriteNode?
     var p1 : SKSpriteNode?
@@ -56,14 +53,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         didSet {
             if ball_height >= 0 {
                 shadow?.isHidden = false
-                shadow?.position.x = ball!.position.x + CGFloat(ball_height * 100)
+                shadow?.position.x = ball!.position.x + CGFloat(ball_height * 200)
             } else {
                 shadow?.isHidden = true
             }
-            ball?.size = CGSize(width: max(15 + ball_height * 10, 0), height: max(15 + ball_height * 10, 0))
+            ball?.size = CGSize(width: max(25 + ball_height * 10, 0), height: max(25 + ball_height * 10, 0))
         }
     }
-    let gravity : Double = -2
+    let gravity : Double = -3
     var ball_Z_Velocity : Double = 0 // vertical velocity
     
     // game play status
@@ -91,36 +88,28 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var bottomLbl : SKLabelNode?
     var message : SKLabelNode?
     
+    var back : SKSpriteNode?
+    
     override func didMove(to view: SKView) {
         
         self.physicsWorld.contactDelegate = self
         self.physicsWorld.gravity = CGVector.zero
         
-        table = SKSpriteNode(color: .blue, size: CGSize(width: self.size.width * 0.75, height: self.size.width * 0.75 * TABLE_HEIGHT_WIDTH_RATIO))
+        table = SKSpriteNode(imageNamed: "table")
+        table?.size = CGSize(width: self.size.width * 0.7, height: self.size.width * 0.7 * table!.size.height / table!.size.width)
         table?.zPosition = 0.1
         table?.anchorPoint = CGPoint(x: 0.5, y: 0.5)
         table?.position = CGPoint.zero
         self.addChild(table!)
+        let table_shadow = SKShapeNode(rect: CGRect(origin: CGPoint(x: 15 - table!.size.width/2, y: -15 - table!.size.height/2), size: table!.size), cornerRadius: 5)
+        table_shadow.zPosition = -1
+        table_shadow.fillColor = .black
+        table_shadow.strokeColor = .clear
+        table_shadow.alpha = 0.5
+        table?.addChild(table_shadow)
         
-        border = SKSpriteNode(color: .white, size: CGSize(width: table!.size.width * 1.05, height: table!.size.height + table!.size.width * 0.05))
-        border?.zPosition = 0
-        border?.anchorPoint = CGPoint(x: 0.5, y: 0.5)
-        border?.position = CGPoint.zero
-        self.addChild(border!)
-        
-        line = SKSpriteNode(color: .white, size: CGSize(width: (border!.size.width - table!.size.width)/2, height: (table?.size.height)!))
-        line?.zPosition = 0.2
-        line?.anchorPoint = CGPoint(x: 0.5, y: 0.5)
-        line?.position = CGPoint.zero
-        self.addChild(line!)
-        
-        net = SKSpriteNode(color: .gray, size: CGSize(width: (table?.size.width)! * 1.05, height: (border!.size.width - table!.size.width)/2))
-        net?.zPosition = 0.2
-        net?.anchorPoint = CGPoint(x: 0.5, y: 0.5)
-        net?.position = CGPoint.zero
-        self.addChild(net!)
-        
-        ball = SKSpriteNode(color: .yellow, size: CGSize(width: 15, height: 15))
+        ball = SKSpriteNode(imageNamed: "ball")
+        ball?.size = CGSize(width: 25, height: 25)
         ball?.zPosition = 20
         ball?.anchorPoint = CGPoint(x: 0.5, y: 0.5)
         ball?.name = "ball"
@@ -129,53 +118,86 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         ball?.physicsBody?.collisionBitMask = 0
         self.addChild(ball!)
         
-        shadow = SKSpriteNode(color: .black, size: CGSize(width: 18, height: 18))
+        shadow = SKSpriteNode(color: .clear, size: ball!.size)
+        let circle = SKShapeNode(circleOfRadius: 25/2)
+        circle.fillColor = .black
+        circle.strokeColor = .clear
+        circle.alpha = 0.8
         shadow?.zPosition = 19
         shadow?.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+        shadow?.addChild(circle)
         self.addChild(shadow!)
         
-        p1 = SKSpriteNode(color: .green, size: CGSize(width: 50, height: 15))
+        p1 = SKSpriteNode(imageNamed: "pad1")
+        p1?.size = CGSize(width: ball!.size.width * 2.5, height: ball!.size.width * 2.5 / p1!.size.width * p1!.size.height)
         p1?.zPosition = 10
         p1?.anchorPoint = CGPoint(x: 0.5, y: 0.5)
         p1?.name = "p1"
-        p1?.physicsBody = SKPhysicsBody(rectangleOf: p1!.size)
+        p1?.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: p1!.size.width, height: ball!.size.width))
         p1?.physicsBody?.contactTestBitMask = 1
         p1?.physicsBody?.isDynamic = false
         self.addChild(p1!)
         
-        p2 = SKSpriteNode(color: .red, size: CGSize(width: 50, height: 15))
+        p2 = SKSpriteNode(imageNamed: "pad2")
+        p2?.size = CGSize(width: ball!.size.width * 2.5, height: ball!.size.width * 2.5 / p2!.size.width * p2!.size.height)
         p2?.zPosition = 10
         p2?.anchorPoint = CGPoint(x: 0.5, y: 0.5)
         p2?.name = "p2"
-        p2?.physicsBody = SKPhysicsBody(rectangleOf: p2!.size)
+        p2?.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: p2!.size.width, height: ball!.size.width))
         p2?.physicsBody?.contactTestBitMask = 1
         p2?.physicsBody?.isDynamic = false
         self.addChild(p2!)
         p2PrevLocation = p2?.position
         
+        let scoreBoard = SKShapeNode(rect: CGRect(origin: CGPoint(x: table!.size.width / 2 + 20, y: -table!.size.height / 3), size: CGSize(width: 40, height: 2 * table!.size.height / 3)), cornerRadius: 20)
+        scoreBoard.zPosition = 0
+        scoreBoard.strokeColor = .clear
+        scoreBoard.fillColor = UIColor(red: 101.0/255, green: 23.0/255, blue: 201.0/255, alpha: 1)
+        self.addChild(scoreBoard)
+        let minipad1_icon = SKSpriteNode(imageNamed: "mini pad 1")
+        minipad1_icon.zPosition = 1
+        minipad1_icon.position = CGPoint(x: scoreBoard.frame.midX, y: scoreBoard.frame.minY + 30)
+        minipad1_icon.zRotation = -.pi / 2
+        scoreBoard.addChild(minipad1_icon)
+        let minipad2_icon = SKSpriteNode(imageNamed: "mini pad 2")
+        minipad2_icon.zPosition = 1
+        minipad2_icon.position = CGPoint(x: scoreBoard.frame.midX, y: scoreBoard.frame.maxY - 30)
+        minipad2_icon.zRotation = -.pi / 6
+        scoreBoard.addChild(minipad2_icon)
+        
         topLbl = SKLabelNode()
+        topLbl?.fontName = "HelveticaNeue-Bold"
         topLbl?.fontColor = .white
         topLbl?.fontSize = 30
-        topLbl?.position = CGPoint(x: self.frame.maxX - 30, y: self.frame.midY + 150)
+        topLbl?.position = CGPoint(x: scoreBoard.frame.midX - 12, y: self.frame.midY + 120)
         topLbl?.zRotation = -.pi / 2
         topLbl?.zPosition = 100
         self.addChild(topLbl!)
         
         bottomLbl = SKLabelNode()
+        bottomLbl?.fontName = "HelveticaNeue-Bold"
         bottomLbl?.fontColor = .white
         bottomLbl?.fontSize = 30
-        bottomLbl?.position = CGPoint(x: self.frame.maxX - 30, y: self.frame.midY - 150)
+        bottomLbl?.position = CGPoint(x: scoreBoard.frame.midX - 12, y: self.frame.midY - 120)
         bottomLbl?.zRotation = -.pi / 2
         bottomLbl?.zPosition = 100
         self.addChild(bottomLbl!)
         
         message = SKLabelNode()
-        message?.fontColor = .white
-        message?.fontSize = 30
-        message?.position = CGPoint(x: self.frame.minX + 30, y: self.frame.midY)
+        message?.fontName = "HelveticaNeue-Bold"
+        message?.fontColor = UIColor(red: 101.0/255, green: 23.0/255, blue: 201.0/255, alpha: 1)
+        message?.fontSize = 40
+        message?.position = CGPoint(x: self.frame.minX + 45, y: self.frame.midY)
         message?.zRotation = .pi / 2
         message?.zPosition = 100
         self.addChild(message!)
+        
+        back = SKSpriteNode(imageNamed: "back")
+        back?.setScale(0.8)
+        back?.anchorPoint = CGPoint(x: 0, y: 1)
+        back?.position = CGPoint(x: self.frame.minX + 10, y: self.frame.maxY - 10)
+        back?.zPosition = 100
+        self.addChild(back!)
         
         startGame()
     }
@@ -194,18 +216,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
     }
     
+    
+    // Contact Detection
     func didBegin(_ contact: SKPhysicsContact) {
-        // check for passing the net because one can only hit the ball once
-        if wait_for_reset {
+        
+        if wait_for_reset { // no update
             return
         }
         
+        message?.text = ""
+        
+        // check for passing the net because one can only hit the ball once
         if passedTheNet {
-            
-            if !bounced && !serving && !wait_for_reset {
-                message?.text = "Volleying"
-                round_over()
-            }
             
             var pad1 : Bool!
             if contact.bodyA.node?.name == "ball" {
@@ -218,13 +240,24 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             // takes care of the case ball spawns on a pad
             if !game_started {
                 if (pad1) ? p1_Y_Velocity > 0 : p2_Y_Velocity < 0 {
-                    game_started = true
+                    game_started = true // start the game if moving pad touches the ball
                 } else {
                     return
                 }
             }
             
             p1_hit = pad1
+            
+            // if pad touches the ball before bounce (except for serve)
+            if !bounced && !serving {
+                if ballOutofBound() { // if the ball is already out, it is out
+                    message?.text = "OUT"
+                    p1_hit = !p1_hit // receiver score
+                } else {
+                    message?.text = "Volleying"
+                }
+                round_over()
+            }
             
             // Rebounce
             ball_Y_Velocity = -ball_Y_Velocity * 0.6
@@ -233,47 +266,68 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             // Forward Velocity
             ball_Y_Velocity += ((pad1) ? p1_Y_Velocity : p2_Y_Velocity)
             
+            // if the ball is high enough, the stroke is considered a Smash
+            // --a stroker too fast to react
+            if ball_height > 0.4 {
+                ball_Y_Velocity *= ball_height * 2 + 1
+                if ball_Y_Velocity > 1400 {
+                    message?.text = "SMASH!!!"
+                }
+            }
+            
+            // if the X Velocity is high enough, it will induce a spin to the ball
             let side_spin = (pad1) ? abs(p1_X_Velocity) > 400 : abs(p2_X_Velocity) > 400
             
             if side_spin {
-                ball_spin += ((pad1) ? p1_X_Velocity : p2_X_Velocity) / 16
-                ball_X_Velocity += ((pad1) ? p1_X_Velocity : p2_X_Velocity) / 1024
-                ball_X_Velocity += ball_spin
+                let spin = ((pad1) ? p1_X_Velocity : p2_X_Velocity) / 2
+                ball_spin += spin
+                ball_X_Velocity += ball_spin / 2
+                if ball_spin * spin < 0 {
+                    ball_X_Velocity += ((pad1) ? p1_X_Velocity : p2_X_Velocity) / 1024
+                } else {
+                    ball_X_Velocity += ((pad1) ? p1_X_Velocity : p2_X_Velocity) / 128
+                }
             } else {
                 ball_X_Velocity += ((pad1) ? p1_X_Velocity : p2_X_Velocity)
                 ball_X_Velocity += ball_spin
                 ball_spin /= 4
             }
             
+            // calculate the angle, represented by vertical velocity, required to get the ball
+            // to a desired location
+            // this is done automatically based on the ball's velocity
             if serving {
-                ball_Z_Velocity = -0.3
+                ball_Z_Velocity = -0.8
                 serving = false
                 passedTheNet = false
             } else {
-                var target_distance = ball_Y_Velocity * table!.size.height / MAX_PAD_VELOCITY
-                if abs(target_distance) > border!.size.height/2 {
+                var target_distance = ball_Y_Velocity * table!.size.height * 0.8 / MAX_PAD_VELOCITY
+                if abs(target_distance) > table!.size.height/2 {
                     let direction = ball_Y_Velocity > 0 ? 1.0 : -1.0
-                    target_distance = direction * (border!.size.height/2 - 50 + Double.random(in: -80..<80))
+                    target_distance = direction * (table!.size.height/2 - 50 + Double.random(in: -80..<80))
                 }
                 let travel_distance = target_distance - ball!.position.y
                 ball_Z_Velocity = -ball_height*ball_Y_Velocity/travel_distance - 0.5*gravity*travel_distance/ball_Y_Velocity
-                if ball_Z_Velocity > 1 {
-                    ball_Z_Velocity = 1
+                if ball_Z_Velocity > 2 {
+                    ball_Z_Velocity = 2
                 }
             }
             
             passedTheNet = false
         }
+        
     }
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         for touch in touches {
             let location = touch.location(in: self)
-            if location.y < -50 {
+            if location.y < -20 {
                 p1?.run(SKAction.move(to: location, duration: 0))
+                p1PrevLocation = p1!.position
             }
-            if location.y > 50 {
+            if location.y > 20 {
                 p2?.run(SKAction.move(to: location, duration: 0))
+                p2PrevLocation = p2!.position
             }
         }
     }
@@ -281,10 +335,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
         for touch in touches {
             let location = touch.location(in: self)
-            if location.y < -50 {
+            if location.y < -20 {
                 p1?.run(SKAction.move(to: location, duration: 0))
             }
-            if location.y > 50 {
+            if location.y > 20 {
                 p2?.run(SKAction.move(to: location, duration: 0))
             }
         }
@@ -301,30 +355,55 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
         if let lastTime = lastUpdateTime  {
             dt = currentTime - lastTime
+            dt = dt / 2
         }
         
         if game_started {
             
-            ball_Y_Velocity -= ball_Y_Velocity * drag_coefficient * dt
+            // trace of the ball
+            let trace = SKShapeNode(circleOfRadius: ball!.size.width / 2)
+            trace.lineWidth = 2.0
+            trace.fillColor = .white
+            if abs(ball_X_Velocity) + abs(ball_Y_Velocity) > 1100 {
+                trace.strokeColor = .cyan
+            } else if abs(ball_X_Velocity) + abs(ball_Y_Velocity) > 800 {
+                trace.strokeColor = .orange
+            } else {
+                trace.strokeColor = .white
+            }
+            trace.zPosition = 18
+            trace.position = ball!.position
+            self.addChild(trace)
+            trace.run(SKAction.scale(to: 0, duration: 1))
+            trace.run(SKAction.fadeOut(withDuration: 1), completion: {
+                trace.removeFromParent()
+            })
+            
+            // reduction on velocity and spin due to air resistance
             let prevY = ball?.position.y
+            ball_Y_Velocity -= ball_Y_Velocity * drag_coefficient * dt
             ball?.position.y += ball_Y_Velocity * dt
             ball_X_Velocity -= ball_X_Velocity * drag_coefficient * dt
             ball?.position.x += ball_X_Velocity * dt
             ball_spin -= ball_spin * drag_coefficient * dt
+            
+            // change of direction due to spin
             let ball_V_sqrd = ball_X_Velocity * ball_X_Velocity + ball_Y_Velocity * ball_Y_Velocity
             ball_X_Velocity -= ball_spin * dt
             let new_Y_V_due_to_spin = sqrt(abs(ball_V_sqrd - ball_X_Velocity * ball_X_Velocity))
-            
             ball_Y_Velocity = (ball_Y_Velocity > 0) ? new_Y_V_due_to_spin : -new_Y_V_due_to_spin
+            
+            // the middle of the table has y-coordinate of 0
             if Double(prevY!) * Double((ball?.position.y)!) <= 0 {
                 passedTheNet = true
             }
             
+            // Vertical update
             if !ballOutofBound() {
                 if ball_height > 0 {
                     ball_Z_Velocity += gravity * dt
                     ball_height += ball_Z_Velocity * dt
-                } else {
+                } else { // Deal with ball hitting table
                     if bounced {
                         if !wait_for_reset {
                             if passedTheNet {
@@ -337,10 +416,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                         bounced = true
                     }
                     
+                    // reflect off the table top
                     ball_Z_Velocity = -ball_Z_Velocity * 0.9
                     ball_height = 0.01
-                    let dot = SKSpriteNode(color: .red, size: ball!.size)
-                    dot.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+                    // change of direction due to spin
+                    ball_X_Velocity -= ball_spin * 0.3
+                    ball_spin *= 0.85
+                    
+                    // a marker on the table to indicate bounce
+                    let dot = SKShapeNode(circleOfRadius: ball!.size.width / 2)
+                    dot.fillColor = .red
+                    dot.strokeColor = .red
+                    dot.alpha = 0.5
                     dot.zPosition = 100
                     dot.position = ball!.position
                     self.addChild(dot)
@@ -349,7 +436,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                     })
                 }
             } else {
-                if ball_height < 0.5 && !wait_for_reset {
+                if (ball_height < -1 || ballOutOfScreen()) && !wait_for_reset {
                     if !bounced || !passedTheNet {
                         message?.text = "OUT"
                     } else {
@@ -362,14 +449,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 ball_height += ball_Z_Velocity * dt
             }
             
-            if (prevY! * ball!.position.y <= 0 && ball_height < 0.1) && !wait_for_reset{
-                message?.text = "NET"
-                ball_Y_Velocity = -ball_Y_Velocity * 0.1
-                round_over()
+            // Check ball height when crossing the net
+            if (prevY! * ball!.position.y <= 0 && ball_height < 0.1) && !ballOutofBound() && !wait_for_reset{
+                if Int.random(in: 1...20) == 1 {
+                    // the case when scratching the net but still passes
+                    // very powerful in real life "lucky ball"
+                    ball_Y_Velocity = ball_Y_Velocity * 0.1
+                } else {
+                    message?.text = "NET"
+                    ball_Y_Velocity = -ball_Y_Velocity * 0.1
+                    round_over()
+                }
             }
             
             
         }
+        print(ball_height)
         
         shadow?.position.y = ball!.position.y
         
@@ -381,8 +476,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     func ballOutofBound () -> Bool {
-        return (ball?.position.x)! < -border!.size.width/2 || (ball?.position.x)! > border!.size.width/2 ||
-        (ball?.position.y)! < -border!.size.height/2 || (ball?.position.y)! > border!.size.height/2
+        return (ball?.position.x)! < -table!.size.width/2 || (ball?.position.x)! > table!.size.width/2 ||
+        (ball?.position.y)! < -table!.size.height/2 || (ball?.position.y)! > table!.size.height/2
     }
     
     func round_over () {
