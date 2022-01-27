@@ -28,21 +28,21 @@ class GameViewController: UIViewController {
             
             view.ignoresSiblingOrder = true
             
-            view.showsFPS = false
-            view.showsNodeCount = false
-            view.showsPhysics = false
+            view.showsFPS = true
+            view.showsNodeCount = true
+            view.showsPhysics = true
         }
     }
 
     override var shouldAutorotate: Bool {
-        return true
+        return false
     }
 
     override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
         if UIDevice.current.userInterfaceIdiom == .phone {
-            return .allButUpsideDown
+            return .portrait
         } else {
-            return .all
+            return .portrait
         }
     }
 

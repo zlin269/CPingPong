@@ -14,7 +14,7 @@ import CoreMotion
 class GameScene: SKScene, SKPhysicsContactDelegate {
     
     // Constants
-    let MAX_PAD_VELOCITY : Double = 600
+    let MAX_PAD_VELOCITY : Double = 1800
     let TABLE_HEIGHT_WIDTH_RATIO : Double = 1.79672131148
     
     var lastUpdateTime : TimeInterval?
@@ -75,6 +75,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
     }
     var bounced : Bool = false
+    var smashed : Bool = false
     var wait_for_reset : Bool = false // when waiting for reset, do not check for rule violation
     
     // text indicators and scoring
@@ -133,7 +134,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         p1?.zPosition = 10
         p1?.anchorPoint = CGPoint(x: 0.5, y: 0.5)
         p1?.name = "p1"
-        p1?.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: p1!.size.width, height: ball!.size.width))
+        p1?.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: p1!.size.width * 0.8, height: ball!.size.width))
         p1?.physicsBody?.contactTestBitMask = 1
         p1?.physicsBody?.isDynamic = false
         self.addChild(p1!)
@@ -143,7 +144,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         p2?.zPosition = 10
         p2?.anchorPoint = CGPoint(x: 0.5, y: 0.5)
         p2?.name = "p2"
-        p2?.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: p2!.size.width, height: ball!.size.width))
+        p2?.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: p2!.size.width * 0.8, height: ball!.size.width))
         p2?.physicsBody?.contactTestBitMask = 1
         p2?.physicsBody?.isDynamic = false
         self.addChild(p2!)
@@ -264,32 +265,36 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             ball_X_Velocity = -ball_X_Velocity * 0.6
             
             // Forward Velocity
-            ball_Y_Velocity += ((pad1) ? p1_Y_Velocity : p2_Y_Velocity)
+            ball_Y_Velocity += ((pad1) ? p1_Y_Velocity : p2_Y_Velocity) / 3
             
+            if smashed {
+                ball_X_Velocity += Double.random(in: -300...300)
+                smashed = false
+            }
             // if the ball is high enough, the stroke is considered a Smash
             // --a stroker too fast to react
             if ball_height > 0.4 {
                 ball_Y_Velocity *= ball_height * 2 + 1
-                if ball_Y_Velocity > 1400 {
+                if abs(ball_Y_Velocity) > 1400 {
                     message?.text = "SMASH!!!"
+                    smashed = true
                 }
             }
             
             // if the X Velocity is high enough, it will induce a spin to the ball
-            let side_spin = (pad1) ? abs(p1_X_Velocity) > 400 : abs(p2_X_Velocity) > 400
+            let side_spin = (pad1) ? abs(p1_X_Velocity) * 2 > abs(p1_Y_Velocity) : abs(p2_X_Velocity) * 2 > abs(p2_Y_Velocity)
+            
+            print(side_spin)
+            print("x:\((pad1) ? p1_X_Velocity: p2_X_Velocity), y:\((pad1) ? p1_Y_Velocity : p2_Y_Velocity)")
             
             if side_spin {
-                let spin = ((pad1) ? p1_X_Velocity : p2_X_Velocity) / 2
+                let spin = ((pad1) ? p1_X_Velocity : -p2_X_Velocity) / 4
                 ball_spin += spin
-                ball_X_Velocity += ball_spin / 2
-                if ball_spin * spin < 0 {
-                    ball_X_Velocity += ((pad1) ? p1_X_Velocity : p2_X_Velocity) / 1024
-                } else {
-                    ball_X_Velocity += ((pad1) ? p1_X_Velocity : p2_X_Velocity) / 128
-                }
+                ball_X_Velocity += (ball_Y_Velocity > 0) ? (ball_spin / 2) : (-ball_spin / 2)
+                ball_X_Velocity += ((pad1) ? p1_X_Velocity : p2_X_Velocity) / 1024
             } else {
-                ball_X_Velocity += ((pad1) ? p1_X_Velocity : p2_X_Velocity)
-                ball_X_Velocity += ball_spin
+                ball_X_Velocity += ((pad1) ? p1_X_Velocity : p2_X_Velocity) / 3
+                ball_X_Velocity += (ball_Y_Velocity > 0) ? (ball_spin) : (-ball_spin)
                 ball_spin /= 4
             }
             
@@ -301,7 +306,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 serving = false
                 passedTheNet = false
             } else {
-                var target_distance = ball_Y_Velocity * table!.size.height * 0.8 / MAX_PAD_VELOCITY
+                var target_distance = ball_Y_Velocity * table!.size.height * 0.8 / (MAX_PAD_VELOCITY / 3)
                 if abs(target_distance) > table!.size.height/2 {
                     let direction = ball_Y_Velocity > 0 ? 1.0 : -1.0
                     target_distance = direction * (table!.size.height/2 - 50 + Double.random(in: -80..<80))
@@ -389,7 +394,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
             // change of direction due to spin
             let ball_V_sqrd = ball_X_Velocity * ball_X_Velocity + ball_Y_Velocity * ball_Y_Velocity
-            ball_X_Velocity -= ball_spin * dt
+            ball_X_Velocity += ball_Y_Velocity > 0 ? -ball_spin * dt : ball_spin * dt
             let new_Y_V_due_to_spin = sqrt(abs(ball_V_sqrd - ball_X_Velocity * ball_X_Velocity))
             ball_Y_Velocity = (ball_Y_Velocity > 0) ? new_Y_V_due_to_spin : -new_Y_V_due_to_spin
             
@@ -420,7 +425,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                     ball_Z_Velocity = -ball_Z_Velocity * 0.9
                     ball_height = 0.01
                     // change of direction due to spin
-                    ball_X_Velocity -= ball_spin * 0.3
+                    ball_X_Velocity -= (ball_Y_Velocity > 0 ? 1 : -1) * ball_spin * 0.3
                     ball_spin *= 0.85
                     
                     // a marker on the table to indicate bounce
@@ -436,7 +441,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                     })
                 }
             } else {
-                if (ball_height < -1 || ballOutOfScreen()) && !wait_for_reset {
+                if (ball_height < -1 || (ball_height < 0 && ballOutOfScreen())) && !wait_for_reset {
                     if !bounced || !passedTheNet {
                         message?.text = "OUT"
                     } else {
@@ -464,7 +469,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
             
         }
-        print(ball_height)
         
         shadow?.position.y = ball!.position.y
         
