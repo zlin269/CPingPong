@@ -381,23 +381,25 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         if game_started {
             
             // trace of the ball
-            let trace = SKShapeNode(circleOfRadius: ball!.size.width / 2)
-            trace.lineWidth = 2.0
-            trace.fillColor = .white
-            if abs(ball_X_Velocity) + abs(ball_Y_Velocity) > 1100 {
-                trace.strokeColor = .cyan
-            } else if abs(ball_X_Velocity) + abs(ball_Y_Velocity) > 800 {
-                trace.strokeColor = .orange
-            } else {
-                trace.strokeColor = .white
+            do {
+                let trace = SKShapeNode(circleOfRadius: ball!.size.width / 2)
+                trace.lineWidth = 2.0
+                trace.fillColor = .white
+                if abs(ball_X_Velocity) + abs(ball_Y_Velocity) > 1100 {
+                    trace.strokeColor = .cyan
+                } else if abs(ball_X_Velocity) + abs(ball_Y_Velocity) > 800 {
+                    trace.strokeColor = .orange
+                } else {
+                    trace.strokeColor = .white
+                }
+                trace.zPosition = 18
+                trace.position = ball!.position
+                self.addChild(trace)
+                trace.run(SKAction.scale(to: 0, duration: 1))
+                trace.run(SKAction.fadeOut(withDuration: 1), completion: {
+                    trace.removeFromParent()
+                })
             }
-            trace.zPosition = 18
-            trace.position = ball!.position
-            self.addChild(trace)
-            trace.run(SKAction.scale(to: 0, duration: 1))
-            trace.run(SKAction.fadeOut(withDuration: 1), completion: {
-                trace.removeFromParent()
-            })
             
             // reduction on velocity and spin due to air resistance
             let prevY = ball?.position.y
